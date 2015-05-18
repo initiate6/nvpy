@@ -64,6 +64,21 @@ VERSION = "0.9.4"
 
 
 class Config:
+
+    def getpwd(self):
+	root = Tk()
+	root.withdraw()
+	try:
+	    password = tkSimpleDialog.askstring("Password", "Enter password:", show='*')
+
+	except Exception as e:
+	    print("Error getting password: %s" % e )
+
+	root.destroy()
+	root.mainloop()
+
+	return password
+
     """
     @ivar files_read: list of config files that were parsed.
     @ivar ok: True if config files had a default section, False otherwise.
@@ -129,21 +144,9 @@ class Config:
         # https://github.com/cpbotha/nvpy/issues/9
         self.sn_username = cp.get(cfg_sec, 'sn_username', raw=True)
         self.sn_password = cp.get(cfg_sec, 'sn_password', raw=True)
+	#If None is in configuration prompt for password. 
 	if self.sn_password == 'None':
-		def getpwd():
-			root = Tk()
-			try:
-				password = tkSimpleDialog.askstring("Password", "Enter password:", show='*')
-
-			except Exception as e:
-				print("Error: %s" % e )
-
-			root.destroy()
-			root.mainloop()
-
-			return password
-
-		self.sn_password = getpwd()
+		self.sn_password = self.getpwd()
 	
         self.simplenote_sync = cp.getint(cfg_sec, 'simplenote_sync')
         # make logic to find in $HOME if not set
