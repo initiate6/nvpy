@@ -128,21 +128,22 @@ class Config:
         # hence the raw parameter. Fixes
         # https://github.com/cpbotha/nvpy/issues/9
         self.sn_username = cp.get(cfg_sec, 'sn_username', raw=True)
-        #self.sn_password = cp.get(cfg_sec, 'sn_password', raw=True) Not Secure
-	def getpwd():
-		root = Tk()
-		try:
-			password = tkSimpleDialog.askstring("Password", "Enter password:", show='*')
+        self.sn_password = cp.get(cfg_sec, 'sn_password', raw=True)
+	if self.sn_password == 'None':
+		def getpwd():
+			root = Tk()
+			try:
+				password = tkSimpleDialog.askstring("Password", "Enter password:", show='*')
 
-		except Exception as e:
-			print("Error: %s" % e )
+			except Exception as e:
+				print("Error: %s" % e )
 
-		root.destroy()
-		root.mainloop()
+			root.destroy()
+			root.mainloop()
 
-		return password
+			return password
 
-	self.sn_password = getpwd()
+		self.sn_password = getpwd()
 	
         self.simplenote_sync = cp.getint(cfg_sec, 'simplenote_sync')
         # make logic to find in $HOME if not set
