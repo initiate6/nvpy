@@ -42,6 +42,8 @@ import time
 from utils import KeyValueObject, SubjectMixin
 import view
 import webbrowser
+from Tkinter import *
+import tkSimpleDialog
 
 try:
     import markdown
@@ -126,7 +128,22 @@ class Config:
         # hence the raw parameter. Fixes
         # https://github.com/cpbotha/nvpy/issues/9
         self.sn_username = cp.get(cfg_sec, 'sn_username', raw=True)
-        self.sn_password = cp.get(cfg_sec, 'sn_password', raw=True)
+        #self.sn_password = cp.get(cfg_sec, 'sn_password', raw=True) Not Secure
+	def getpwd():
+		root = Tk()
+		try:
+			password = tkSimpleDialog.askstring("Password", "Enter password:", show='*')
+
+		except Exception as e:
+			print("Error: %s" % e )
+
+		root.destroy()
+		root.mainloop()
+
+		return password
+
+	self.sn_password = getpwd()
+	
         self.simplenote_sync = cp.getint(cfg_sec, 'simplenote_sync')
         # make logic to find in $HOME if not set
         self.db_path = cp.get(cfg_sec, 'db_path')
