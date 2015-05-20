@@ -34,7 +34,7 @@ import codecs
 import ConfigParser
 import logging
 from logging.handlers import RotatingFileHandler
-from notes_db import NotesDB, SyncError, ReadError, WriteError
+from notes_db import NotesDB, SyncError, ReadError, WriteError 
 import os
 import sys
 import time
@@ -44,6 +44,7 @@ import view
 import webbrowser
 from Tkinter import *
 import tkSimpleDialog
+import veracrypt
 
 try:
     import markdown
@@ -69,7 +70,7 @@ class Config:
 	root = Tk()
 	root.withdraw()
 	try:
-	    password = tkSimpleDialog.askstring("Password", "Enter password:", show='*')
+	    password = tkSimpleDialog.askstring("Password", "Please enter password for SimpleNote:", show='*')
 
 	except Exception as e:
 	    print("Error getting password: %s" % e )
@@ -119,6 +120,17 @@ class Config:
                     # Filename or filepath to a css file used style the rendered
                     # output; e.g. nvpy.css or /path/to/my.css
                     'rest_css_path': None,
+
+		    'enable_truecrypt': False,
+		    'encryption_type': 'AES-Twofish',
+		    'key_file': '',
+		    'filesystem_type': 'none',
+		    'hash_type': 'SHA-512',
+		    'random_source': '/dev/random',
+		    'size': '1073741824',
+		    'volume_type': 'normal',
+		    'container_path': os.path.join(home, '.nvpy.vc'),
+		    'protect_hidden': 'no',
                    }
 
         cp = ConfigParser.SafeConfigParser(defaults)
@@ -177,6 +189,29 @@ class Config:
         self.rest_css_path = cp.get(cfg_sec, 'rest_css_path')
         self.debug = cp.get(cfg_sec, 'debug')
 
+	#Get Truecrypt settings
+        cfg_sec = 'truecrypt'
+
+        if not cp.has_section(cfg_sec):
+            cp.add_section(cfg_sec)
+            self.ok = False
+
+        else:
+            self.ok = True
+
+	self.enable_truecrypt = cp.get(cfg_sec, 'enable_truecrypt')
+	self.encryption_type = cp.get(cfg_sec, 'encryption_type')
+	self.key_file = cp.get(cfg_sec, 'key_file')
+	self.filesystem_type = cp.get(cfg_sec, 'filesystem_type')
+	self.hash_type = cp.get(cfg_sec, 'hash_type')
+	self.random_source = cp.get(cfg_sec, 'random_source')
+	self.size = cp.getint(cfg_sec, 'size') * 1073741824
+	self.volume_type = cp.get(cfg_sec, 'volume_type')
+	self.container_path = cp.get(cfg_sec, 'container_path')
+	self.protect_hidden = cp.get(cfg_sec, 'protect_hidden')
+	
+
+
 
 class NotesListModel(SubjectMixin):
     """
@@ -225,6 +260,19 @@ class Controller:
         # should probably also look in $HOME
         self.config = Config(self.appdir)
         self.config.app_version = VERSION
+
+	#VeraCrypt creation / mounting.
+	if self.config.enable_truecrypt:
+	    # first create db directory if it doesn't exist yet.
+	    if not os.path.exists(self.config.db_path):
+		os.mkdir(self.config.db_path)
+
+	    self.vc = veracrypt.veracrypt()
+	    #check if container exist if not create container
+	    if not os.path.exists(self.config.container_path):
+		self.vc.createContainer(self.config)
+	    #mount container
+	    self.vc.mountContainer(self.config)
 
         # configure logging module
         #############################
@@ -643,9 +691,13 @@ class Controller:
             really_want_to_exit = self.view.askyesno("Confirm exit", msg)
 
             if really_want_to_exit:
+		#unmount VeraCrypt
+		self.vc.unmountContainer(self.config)
                 self.view.close()
 
         else:
+	    #unmount VeraCrypt
+	    self.vc.unmountContainer(self.config)
             self.view.close()
 
     def observer_view_create_note(self, view, evt_type, evt):
